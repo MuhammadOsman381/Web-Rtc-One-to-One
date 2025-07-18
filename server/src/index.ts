@@ -23,11 +23,11 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('send-offer', ({ offer, to, roomId }) => {
+  socket.on('send-offer', ({ offer, to }) => {
     socket.to(to).emit('offer-received', { offer, from: socket.id });
   });
 
-  socket.on('send-answer', ({ answer, to, roomId }) => {
+  socket.on('send-answer', ({ answer, to }) => {
     socket.to(to).emit('answer-received', { answer });
   });
 
