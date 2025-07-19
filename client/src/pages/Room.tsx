@@ -18,7 +18,9 @@ const Room: React.FC = () => {
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
     const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-    const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>();
+    // const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>();
+
+    const [flag, setFlag] = useState(false)
 
     const handleJoinRoom = async (data: JoinRoomData) => {
         const { userId } = data;
@@ -32,15 +34,15 @@ const Room: React.FC = () => {
                 },
             ],
         })
-        setPeerConnection(peer)
+        peerConnectionRef.current = peer
+
         const offer = await peer.createOffer()
         await peer.setLocalDescription(offer);
 
-
-
-        if (localVideoRef.current) {
-            localVideoRef.current.getTracks().forEach(track => {
-                peer.addTrack(track, localVideoRef.current!);
+        const stream = localVideoRef?.current?.srcObject as MediaStream | null
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                peer.addTrack(track, stream);
             });
         }
 
@@ -53,6 +55,7 @@ const Room: React.FC = () => {
                 video: true,
                 audio: true,
             });
+
             setLocalStream(stream);
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
@@ -64,38 +67,11 @@ const Room: React.FC = () => {
 
     const handleOfferReceived = async ({ offer, from }: { offer: any; from: string }) => {
         console.log('offer received:', offer);
-        let peer = peerConnection;
-        if (!peer) {
-            peer = new RTCPeerConnection({
-                iceServers: [
-                    {
-                        urls: [
-                            "stun:stun.l.google.com:19302",
-                            "stun:global.stun.twilio.com:3478",
-                        ],
-                    },
-                ],
-            });
-            setPeerConnection(peer);
-            peer.ontrack = (event) => {
-                const [remoteStream] = event.streams;
-                if (remoteVideoRef.current) {
-                    remoteVideoRef.current.srcObject = remoteStream;
-                }
-            };
-
-
-            console.log('localVideoRef.current.getTracks()',localVideoRef.current.getTracks())
-
-            if (localVideoRef.current) {
-                localVideoRef.current.getTracks().forEach(track => {
-                    peer.addTrack(track, localVideoRef.current!);
-                });
-            }
-        }
-        await peer.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peer.createAnswer();
-        await peer.setLocalDescription(answer);
+        console.log('offer recieved peer ', peerConnectionRef.current)
+        let peer = peerConnectionRef.current;
+        await peer?.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peer?.createAnswer();
+        await peer?.setLocalDescription(answer);
         socket.emit('send-answer', { answer, to: from });
     };
 
@@ -103,20 +79,22 @@ const Room: React.FC = () => {
     const handleAnswerReceived = async (data: { answer: any }) => {
         const { answer } = data;
         console.log('answer recieved', answer)
-        await peerConnection?.setRemoteDescription(new RTCSessionDescription(answer));
+        await peerConnectionRef?.current?.setRemoteDescription(new RTCSessionDescription(answer));
     };
 
 
     useEffect(() => {
-        if (!peerConnection) return;
-        peerConnection.ontrack = (event) => {
-            console.log('event', event)
-            const [remoteStream] = event.streams;
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = remoteStream;
-            }
-        };
-    }, [peerConnection]);
+        // console.log(peerConnectionRef.current)
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.ontrack = (event) => {
+                console.log('event', event)
+                const [remoteStream] = event.streams;
+                if (remoteVideoRef.current) {
+                    remoteVideoRef.current.srcObject = remoteStream;
+                }
+            };
+        }
+    }, [flag]);
 
     useEffect(() => {
         if (!roomId || !name) return;
