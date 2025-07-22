@@ -2,38 +2,31 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactPlayer from 'react-player';
-import PeerService from '../services/Peer'
 import toast from 'react-hot-toast';
 
 const socket = io('http://localhost:5000');
 
-interface JoinRoomData {
-    name: string;
-    userId: string;
-    roomId: string;
-}
-
 const Room2: React.FC = () => {
-    const { roomId, name } = useParams<{ roomId: string, name: string }>();
+    const { roomId, name } = useParams<{ roomId: string; name: string }>();
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [showRemoteStream, setShowRemoteStream] = useState(false);
+    const [remoteUserId, setRemoteUserId] = useState('');
+    const [remoteUserName, setRemoteUserName] = useState('');
+    const [remoteOffer, setRemoteOffer] = useState<RTCSessionDescriptionInit | null>(null);
+    const [fromOffer, setFromOffer] = useState('');
+    const [isInitiator, setIsInitiator] = useState(false);
+
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
     const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-
-    const [remoteUserId, setRemoteUserId] = useState<string>('')
-    const [remoteUserName, setRemoteUserName] = useState('')
-    const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
-
-    const [flag, setFlag] = useState(false)
-
 
     const createPeerConnection = () => {
         const peer = new RTCPeerConnection({
             iceServers: [
                 {
                     urls: [
-                        "stun:stun.l.google.com:19302",
-                        "stun:global.stun.twilio.com:3478",
+                        'stun:stun.l.google.com:19302',
+                        'stun:global.stun.twilio.com:3478',
                     ],
                 },
             ],
@@ -41,7 +34,7 @@ const Room2: React.FC = () => {
 
         peer.onicecandidate = (event) => {
             if (event.candidate) {
-                socket.emit('ice-candidate', { candidate: event.candidate });
+                socket.emit('ice-candidate', { candidate: event.candidate, to: remoteUserId });
             }
         };
 
@@ -52,7 +45,6 @@ const Room2: React.FC = () => {
         };
 
         let isNegotiating = false;
-
         peer.onnegotiationneeded = async () => {
             if (isNegotiating) return;
             isNegotiating = true;
@@ -62,6 +54,7 @@ const Room2: React.FC = () => {
                 socket.emit('send-offer', {
                     offer: peer.localDescription,
                     to: remoteUserId,
+                    name: name,
                 });
             } catch (err) {
                 console.error('Negotiation error:', err);
@@ -70,12 +63,6 @@ const Room2: React.FC = () => {
             }
         };
 
-        peer.ontrack = (event) => {
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = event.streams[0];
-            }
-        };
-        setPeerConnection(peer)
         peerConnectionRef.current = peer;
         return peer;
     };
@@ -90,120 +77,144 @@ const Room2: React.FC = () => {
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
             }
-
         } catch (error) {
             console.error('Error accessing media devices.', error);
         }
     };
 
-    const handleJoinRoom = async ({ name, userId }: { name: string, userId: string }) => {
-        toast.success(`${name} with ${userId} is online`);
-        setRemoteUserName(name)
-        setRemoteUserId(userId)
-        const offer = await peerConnectionRef.current?.createOffer()
-        await peerConnectionRef.current?.setLocalDescription(offer);
-        socket.emit('send-offer', {
-            offer: peerConnectionRef.current?.localDescription,
-            to: remoteUserId,
-        });
-    }
+    const handleJoinRoom = ({ name, userId }: { name: string; userId: string }) => {
+        toast.success(`${name} is online`);
+        setRemoteUserId(userId);
+        setRemoteUserName(name);
+    };
 
     const sendOffer = async () => {
-        const offer = await peerConnectionRef.current?.createOffer()
+        const offer = await peerConnectionRef.current?.createOffer();
         await peerConnectionRef.current?.setLocalDescription(offer);
         socket.emit('send-offer', {
             offer: peerConnectionRef.current?.localDescription,
             to: remoteUserId,
+            name: name,
         });
-    }
+    };
 
-    const handleOfferRecieved = async ({ offer, from }: { offer: any, from: string }) => {
-        if (peerConnectionRef.current) {
-            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+    const handleOfferReceived = async ({
+        offer,
+        from,
+        name,
+    }: {
+        offer: RTCSessionDescriptionInit;
+        from: string;
+        name: string;
+    }) => {
+        toast.success(`${name} is calling!`);
+        setRemoteOffer(offer);
+        setFromOffer(from);
+        setIsInitiator(false);
+        setRemoteUserName(name);
+    };
+
+    const answerCaller = async () => {
+        setShowRemoteStream(true);
+        if (peerConnectionRef.current && remoteOffer !== null) {
+            await peerConnectionRef.current.setRemoteDescription(
+                new RTCSessionDescription(remoteOffer)
+            );
             const answer = await peerConnectionRef.current.createAnswer();
             await peerConnectionRef.current.setLocalDescription(answer);
-            socket.emit('send-answer', { answer: peerConnectionRef.current.localDescription, to: from });
+            socket.emit('send-answer', {
+                answer: peerConnectionRef.current.localDescription,
+                to: fromOffer,
+            });
         }
     };
 
-
-    const handleRecievedAnswer = async ({ answer }: { answer: any }) => {
-        console.log('Answer received:', answer);
-        const peer: any = peerConnectionRef.current
-        await peer.setRemoteDescription(
-            new RTCSessionDescription(answer)
-        );
-        console.log('Remote description (answer) set successfully');
+    const handleReceivedAnswer = async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
+        setShowRemoteStream(true);
+        const peer = peerConnectionRef.current;
+        await peer?.setRemoteDescription(new RTCSessionDescription(answer));
     };
 
-
     useEffect(() => {
-        if (!roomId || !name) return;
         socket.emit('join-room', { roomId, name });
+
         socket.on('user-joined', handleJoinRoom);
-        socket.on('offer-received', handleOfferRecieved)
-        socket.on('answer-received', handleRecievedAnswer)
+        socket.on('offer-received', handleOfferReceived);
+        socket.on('answer-received', handleReceivedAnswer);
+
+        socket.on('show-call-button', () => {
+            setIsInitiator(true);
+        });
+
+        socket.on('show-answer-button', () => {
+            setIsInitiator(false);
+        });
+
         return () => {
             socket.off('user-joined', handleJoinRoom);
-            socket.off('offer-received', handleOfferRecieved)
-            socket.off('answer-received', handleRecievedAnswer)
+            socket.off('offer-received', handleOfferReceived);
+            socket.off('answer-received', handleReceivedAnswer);
+            socket.off('show-call-button');
+            socket.off('show-answer-button');
 
             if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
+                localStream.getTracks().forEach((track) => track.stop());
             }
-            if (peerConnectionRef.current) {
-                peerConnectionRef.current.close();
-            }
+            peerConnectionRef.current?.close();
         };
     }, [roomId, name]);
 
-
     useEffect(() => {
-        localStream?.getTracks().forEach(track => {
+        localStream?.getTracks().forEach((track) => {
             peerConnectionRef.current?.addTrack(track, localStream);
         });
-    }, [localStream])
+    }, [localStream]);
 
     useEffect(() => {
         handleLocalUserStreamAndCall();
-        createPeerConnection()
-    }, [])
-
-
+        createPeerConnection();
+    }, []);
 
     return (
         <div className='w-full flex p-5 justify-center gap-5'>
             {localStream && (
                 <div className='space-y-2 shadow-md rounded-xl w-auto p-2 flex flex-col'>
-                    <ReactPlayer
+                    <video
                         ref={localVideoRef}
-                        playing
+                        autoPlay
                         muted
                         controls
-                        // url={localStream}
-                        className='w-full h-full object-contain'
+                        playsInline
+                        className='w-full h-full object-contain rounded-xl'
                     />
                     <span>{name}</span>
-
-                    {name != remoteUserName
-                        &&
-                        <button onClick={sendOffer} className='border' >
-                            Send Stream
-                        </button>
-                    }
-
+                    {!showRemoteStream && (
+                        <div>
+                            {isInitiator && !remoteOffer && (
+                                <button onClick={sendOffer} className='border'>
+                                    Call
+                                </button>
+                            )}
+                            {!isInitiator && remoteOffer && (
+                                <button onClick={answerCaller} className='border'>
+                                    Answer
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
-            {remoteVideoRef && (
+            {showRemoteStream && (
                 <div className='space-y-2 shadow-md rounded-xl w-auto p-2 flex flex-col'>
                     <video
                         ref={remoteVideoRef}
                         autoPlay
                         muted
+                        controls
                         playsInline
                         className='w-full h-full object-contain rounded-xl'
                     />
-                    <span>Remote</span>
+                    <span>{remoteUserName}</span>
                 </div>
             )}
         </div>
