@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { MdCall, MdCallEnd } from 'react-icons/md';
-
+import { BsSend } from "react-icons/bs";
 const socket = io('http://localhost:5000');
 
 const Room2: React.FC = () => {
@@ -135,12 +135,55 @@ const Room2: React.FC = () => {
         await peer?.setRemoteDescription(new RTCSessionDescription(answer));
     };
 
+    const endCall = () => {
+        setShowRemoteStream(false);
+        if (localVideoRef.current?.srcObject) {
+            const tracks = (localVideoRef.current.srcObject as MediaStream).getTracks();
+            tracks.forEach((track) => track.stop());
+            localVideoRef.current.srcObject = null;
+        }
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+        }
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = null;
+        }
+        socket.emit('end-call', {
+            name,
+            remoteUserId,
+            isStreamExist: localStream ? true : false,
+        });
+    };
+
+
+    const handleEndCallReciever = (name: string, isStreamExist: boolean) => {
+        toast.error(`${name} ended the call`);
+        if (localVideoRef.current?.srcObject) {
+            const tracks = (localVideoRef.current.srcObject as MediaStream).getTracks();
+            tracks.forEach((track) => track.stop());
+            localVideoRef.current.srcObject = null;
+        }
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+        }
+
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = null;
+        }
+        setShowRemoteStream(false);
+    };
+
+
+
     useEffect(() => {
         socket.emit('join-room', { roomId, name });
 
         socket.on('user-joined', handleJoinRoom);
         socket.on('offer-received', handleOfferReceived);
         socket.on('answer-received', handleReceivedAnswer);
+        socket.on('end-call-reciever', handleEndCallReciever);
 
         socket.on('show-call-button', () => {
             setIsInitiator(true);
@@ -156,6 +199,7 @@ const Room2: React.FC = () => {
             socket.off('answer-received', handleReceivedAnswer);
             socket.off('show-call-button');
             socket.off('show-answer-button');
+            socket.off('end-call-reciever', handleEndCallReciever);
 
             if (localStream) {
                 localStream.getTracks().forEach((track) => track.stop());
@@ -176,68 +220,81 @@ const Room2: React.FC = () => {
     }, []);
 
     return (
-        <div className='w-full flex flex-col p-5 justify-center items-center gap-5'>
-            <div className='w-full flex justify-center gap-5' >
-                {
-                    localStream &&
-                    <div className="card  rounded-xl  w-96 shadow-sm ">
-                        <figure className="px-0 pt-0">
-                            <video
-                                ref={localVideoRef}
-                                autoPlay
-                                muted
-                                controls
-                                playsInline
-                                className="rounded-t-xl " />
-                        </figure>
-                        <div className="p-3 items-center text-center  w-full">
-                            <h2 className="font-bold text-xl w-full text-center ">{name}</h2>
+        <div className='flex flex-row flex-wrap items-center justify-center h-auto' >
+            <div className=' lg:w-1/2 border flex flex-col p-5 justify-center items-center h-full gap-10  '>
+                <div className='w-full flex justify-center gap-5' >
+                    {
+                        localStream &&
+                        <div className="card  rounded-xl  w-full shadow-sm ">
+                            <figure className="px-0 pt-0">
+                                <video
+                                    ref={localVideoRef}
+                                    autoPlay
+                                    muted
+                                    controls
+                                    playsInline
+                                    className="rounded-t-xl " />
+                            </figure>
+                            <div className="p-3 items-center text-center  w-full">
+                                <h2 className="font-bold text-xl w-full text-center ">{name}</h2>
+                            </div>
                         </div>
-                    </div>
-                }
-                {
-                    showRemoteStream &&
-                    <div className="card rounded-xl  w-96 shadow-sm ">
-                        <figure className="px-0 pt-0">
-                            <video
-                                ref={remoteVideoRef}
-                                autoPlay
-                                muted
-                                controls
-                                playsInline
-                                className="rounded-t-xl" />
-                        </figure>
-                        <div className="p-3 items-center text-center  w-full">
-                            <h2 className="font-bold text-xl w-full text-center ">{remoteUserName}</h2>
-                        </div>
-                    </div>
-                }
-            </div>
-            {
-
-                <div className='  bg-orange-100 flex items-center justify-center  rounded-full h-auto px-4 py-2 gap-3' >
-                    {!showRemoteStream ? (
-                        < >
-                            {isInitiator && !remoteOffer && (
-                                <span onClick={sendOffer} className=' text-orange-900 rounded-full p-2  '  >
-                                    <MdCall size='30' />
-                                </span>
-                            )}
-                            {!isInitiator && remoteOffer && (
-                                <span onClick={answerCaller} className='bg-orange-100 text-orange-900 rounded-full p-2  '  >
-                                    <MdCallEnd size='30' />
-                                </span>
-                            )}
-                        </>
-                    ) :
-                        <span  className='bg-orange-100 text-orange-900 rounded-full p-2  '  >
-                            <MdCallEnd size='30' />
-                        </span>
                     }
+                    {
+                        showRemoteStream &&
+                        <div className="card rounded-xl  w-full shadow-sm ">
+                            <figure className="px-0 pt-0">
+                                <video
+                                    ref={remoteVideoRef}
+                                    autoPlay
+                                    muted
+                                    controls
+                                    playsInline
+                                    className="rounded-t-xl" />
+                            </figure>
+                            <div className="p-3 items-center text-center  w-full">
+                                <h2 className="font-bold text-xl w-full text-center ">{remoteUserName}</h2>
+                            </div>
+                        </div>
+                    }
+                </div>
+                {
+
+                    <div className='   flex items-center justify-center border  rounded-full h-auto px-4 py-2 gap-3' >
+                        {!showRemoteStream ? (
+                            < >
+                                {isInitiator && !remoteOffer && (
+                                    <span onClick={sendOffer} className='bg-orange-100 text-orange-900 rounded-full p-4  '  >
+                                        <MdCall size='35' />
+                                    </span>
+                                )}
+                                {!isInitiator && remoteOffer && (
+                                    <span onClick={answerCaller} className='bg-orange-100 text-orange-900 rounded-full p-4  '  >
+                                        <MdCallEnd size='35' />
+                                    </span>
+                                )}
+                            </>
+                        ) :
+                            <span className='bg-orange-100 text-orange-900 rounded-full p-4  '  >
+                                <MdCallEnd onClick={endCall} size='35' />
+                            </span>
+                        }
+                    </div>
+                }
+
+            </div>
+
+            <div className='lg:w-1/3 border  w-full lg:p-10 p-5 space-y-5 ' >
+                <div className='bg-orange-100 w-full  rounded-xl h-96' >
 
                 </div>
-            }
-
+                <div className='bg-orange-100 h-auto w-full space-x-3  rounded-xl px-4 py-4 flex items-center justify-center' >
+                    <input type="text" className='input w-full' />
+                    <span className='bg-orange-200 p-3 rounded-full flex items-center justify-center' >
+                        <BsSend/>
+                    </span>
+                </div>
+            </div>
         </div>
     );
 };

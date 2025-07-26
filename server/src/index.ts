@@ -43,6 +43,11 @@ io.on('connection', (socket) => {
     }
   });
 
+
+  socket.on('end-call', ({ name, remoteUserId, isStreamExist }) => {
+    socket.to(remoteUserId).emit('end-call-reciever', name, isStreamExist)
+  })
+
   socket.on('send-offer', ({ offer, to, name }) => {
     socket.to(to).emit('offer-received', { offer, from: socket.id, name });
   });
