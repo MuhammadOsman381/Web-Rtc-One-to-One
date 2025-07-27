@@ -1,13 +1,21 @@
 import express from 'express';
-import http from 'http';
+import https from 'https';
 import { Server } from 'socket.io';
+import fs from 'fs';
 
 const app = express();
-const server = http.createServer(app);
+
+const server = https.createServer({
+  key: fs.readFileSync('./ssl/key.pem'),
+  cert: fs.readFileSync('./ssl/cert.pem'),
+}, app);
+
+const IPV4_ADDRESS = '192.168.18.12';
+
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
@@ -54,6 +62,14 @@ io.on('connection', (socket) => {
 
   socket.on('send-answer', ({ answer, to }) => {
     socket.to(to).emit('answer-received', { answer });
+  });
+
+  socket.on('screen-share-started', ({ name, to }) => {
+    socket.to(to).emit('screen-share-started-remote', { name });
+  });
+
+  socket.on('send-message', ({ message, room, from }) => {
+    io.to(room).emit('message-received', { message, from });
   });
 
   socket.on('ice-candidate', ({ candidate, to }) => {

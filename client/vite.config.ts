@@ -1,34 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import fs from 'fs';
+import path from 'path';
+import tailwindcss from '@tailwindcss/vite';
 
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
-import rollupNodePolyFill from 'rollup-plugin-node-polyfills';
+console.log(path.resolve(__dirname, 'cert/key.pem'))
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss()
-  ],
-  resolve: {
-    alias: {
-      stream: 'stream-browserify',
-      crypto: 'crypto-browserify',
-      buffer: 'buffer',
+  plugins: [react(), tailwindcss()],
+  server: {
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, 'ssl/key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/cert.pem')),
     },
+    host: true, 
+    port: 5173,
   },
-  optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: 'globalThis', // <== critical line
-      },
-      plugins: [NodeGlobalsPolyfillPlugin({ buffer: true })],
-    },
-  },
-  build: {
-    rollupOptions: {
-      plugins: [rollupNodePolyFill() as any],
-    },
-  },
-})
+});
