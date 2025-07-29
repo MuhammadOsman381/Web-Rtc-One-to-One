@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
-import { MdCall, MdCallEnd, MdScreenShare, MdStopScreenShare } from 'react-icons/md';
+import { MdCall, MdCallEnd } from 'react-icons/md';
 import { BsSend } from "react-icons/bs";
 import { FaVideo, FaVideoSlash } from 'react-icons/fa';
 import { HiMiniSpeakerWave, HiMiniSpeakerXMark } from 'react-icons/hi2';
@@ -19,7 +19,7 @@ const Room2: React.FC = () => {
     const [isInitiator, setIsInitiator] = useState(false);
     const [isVideoOn, setIsVideoOn] = useState(true);
     const [isAudioOn, setIsAudioOn] = useState(false);
-    const [isScreenShared, setIsScreenShared] = useState(false);
+    // const [isScreenShared, setIsScreenShared] = useState(false);
     const [message, setMessage] = useState('');
     const [showLocalScreenShare, setShowLocalScreenShare] = useState(false);
     const [showRemoteScreenShare, setShowRemoteScreenShare] = useState(false);
@@ -288,123 +288,125 @@ const Room2: React.FC = () => {
     }, []);
 
     return (
-        <div className='flex  flex-wrap justify-center h-auto w-full'>
-            <div className='w-full lg:w-[79vw] flex flex-col  p-5 justify-center items-center h-full gap-5'>
-                <div className='w-full flex flex-col md:flex-row justify-center gap-5'>
-                    {localStream && (
-                        <div className="card rounded-xl bg-orange-100">
-                            <figure className="px-0 pt-0">
-                                <video
-                                    ref={localVideoRef}
-                                    autoPlay
-                                    playsInline
-                                    className="rounded-t-xl w-full max-w-full"
-                                />
-                            </figure>
-                            <div className="p-3 items-center text-center w-full">
-                                <h2 className="font-bold text-xl w-full text-center">{name}</h2>
-                            </div>
-                        </div>
-                    )}
-                    {showRemoteStream && (
-                        <div className="card rounded-xl bg-orange-100">
-                            <figure className="px-0 pt-0">
-                                <video
-                                    ref={remoteVideoRef}
-                                    autoPlay
-                                    playsInline
-                                    className="rounded-t-xl w-full max-w-full"
-                                />
-                            </figure>
-                            <div className="p-3 items-center text-center w-full">
-                                <h2 className="font-bold text-xl w-full text-center">{remoteUserName}</h2>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className='flex items-center justify-center bg-orange-200 px-3 py-2 rounded-full h-auto gap-3 flex-wrap'>
-                    {!showRemoteStream ? (
-                        <>
-                            {isInitiator && !remoteOffer && (
-                                <span onClick={sendOffer} className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                    <MdCall size='25' />
-                                </span>
-                            )}
-                            {!isInitiator && remoteOffer && (
-                                <span onClick={answerCaller} className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                    <MdCallEnd size='25' />
-                                </span>
-                            )}
-                            <span onClick={turnOnAndOffVideo} className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                {isVideoOn ? <FaVideoSlash size='25' /> : <FaVideo size='25' />}
-                            </span>
-                            <span onClick={turnOnAndOffAudio} className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                {isAudioOn ? <HiMiniSpeakerXMark size='25' /> : <HiMiniSpeakerWave size='25' />}
-                            </span>
-                        </>
-                    ) : (
-                        <div className='flex items-center justify-center rounded-full h-auto gap-3 flex-wrap'>
-                            <span className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                <MdCallEnd onClick={endCall} size='25' />
-                            </span>
-                            <span onClick={turnOnAndOffVideo} className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                {isVideoOn ? <FaVideoSlash size='25' /> : <FaVideo size='25' />}
-                            </span>
-                            <span onClick={turnOnAndOffAudio} className='bg-orange-100 text-orange-900 rounded-full p-2'>
-                                {isAudioOn ? <HiMiniSpeakerXMark size='25' /> : <HiMiniSpeakerWave size='25' />}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className='w-full lg:w-1/5 p-5  space-y-3'>
-                <div className='bg-orange-100 w-full rounded-xl h-[54vh] overflow-auto'>
-                    <div className="p-4">
-
-                        {
-                            messages.length == 0 && <div className='text-center w-full'>Chatting is not started yet</div>
-                        }
-
-                        {messages.map((msg, index) => (
-                            msg.from === name ? (
-                                <div key={index} className="chat chat-end">
-                                    <div className="chat-header">{msg.from}</div>
-                                    <div className="chat-bubble">{msg.message}</div>
+        <div className=' w-full flex items-center justify-center' >
+            <div className='flex lg:w-[60vw]  flex-wrap   justify-center h-auto '>
+                <div className='w-full lg:w-full flex flex-col  p-5 justify-center items-center h-full gap-5'>
+                    <div className='w-full flex flex-col md:flex-row justify-center gap-5'>
+                        {localStream && (
+                            <div className="card rounded-xl bg-orange-100">
+                                <figure className="px-0 pt-0">
+                                    <video
+                                        ref={localVideoRef}
+                                        autoPlay
+                                        playsInline
+                                        className="rounded-t-xl w-full max-w-full"
+                                    />
+                                </figure>
+                                <div className="p-3 items-center text-center w-full">
+                                    <h2 className="font-bold text-xl w-full text-center">{name}</h2>
                                 </div>
-                            ) : (
-                                <div key={index} className="chat chat-start">
-                                    <div className="chat-image avatar"></div>
-                                    <div className="chat-header">{msg.from}</div>
-                                    <div className="chat-bubble">{msg.message}</div>
+                            </div>
+                        )}
+                        {showRemoteStream && (
+                            <div className="card rounded-xl bg-orange-100">
+                                <figure className="px-0 pt-0">
+                                    <video
+                                        ref={remoteVideoRef}
+                                        autoPlay
+                                        playsInline
+                                        className="rounded-t-xl w-full max-w-full"
+                                    />
+                                </figure>
+                                <div className="p-3 items-center text-center w-full">
+                                    <h2 className="font-bold text-xl w-full text-center">{remoteUserName}</h2>
                                 </div>
-                            )
-                        ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className='flex items-center  justify-center bg-orange-200 px-3 py-2 rounded-full h-auto gap-3 flex-wrap'>
+                        {!showRemoteStream ? (
+                            <>
+                                {isInitiator && !remoteOffer && (
+                                    <span onClick={sendOffer} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                        <MdCall size='25' />
+                                    </span>
+                                )}
+                                {!isInitiator && remoteOffer && (
+                                    <span onClick={answerCaller} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                        <MdCallEnd size='25' />
+                                    </span>
+                                )}
+                                <span onClick={turnOnAndOffVideo} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    {isVideoOn ? <FaVideoSlash size='25' /> : <FaVideo size='25' />}
+                                </span>
+                                <span onClick={turnOnAndOffAudio} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    {isAudioOn ? <HiMiniSpeakerXMark size='25' /> : <HiMiniSpeakerWave size='25' />}
+                                </span>
+                            </>
+                        ) : (
+                            <div className='flex items-center justify-center rounded-full h-auto gap-3 flex-wrap'>
+                                <span className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    <MdCallEnd onClick={endCall} size='25' />
+                                </span>
+                                <span onClick={turnOnAndOffVideo} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    {isVideoOn ? <FaVideoSlash size='25' /> : <FaVideo size='25' />}
+                                </span>
+                                <span onClick={turnOnAndOffAudio} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    {isAudioOn ? <HiMiniSpeakerXMark size='25' /> : <HiMiniSpeakerWave size='25' />}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
-                <div className='bg-orange-100 h-auto w-full space-x-3 rounded-xl px-4 py-4 flex items-center justify-center'>
-                    <input
-                        onChange={(e) => setMessage(e.target.value)}
-                        value={message}
-                        type="text"
-                        className='input w-full'
-                    />
-                    <span
-                        onClick={() => {
-                            if (message.trim() !== '') {
-                                socket.emit('send-message', { message, room: roomId, from: name });
-                                setMessage('');
+
+                <div className='w-full lg:w-full p-5  space-y-3'>
+                    <div className='bg-orange-100 w-full rounded-xl h-[54vh] overflow-auto'>
+                        <div className="p-4">
+
+                            {
+                                messages.length == 0 && <div className='text-center w-full'>Chatting is not started yet</div>
                             }
-                        }}
-                        className='bg-orange-200 p-3 rounded-full flex items-center justify-center'
-                    >
-                        <BsSend />
-                    </span>
+
+                            {messages.map((msg, index) => (
+                                msg.from === name ? (
+                                    <div key={index} className="chat chat-end">
+                                        <div className="chat-header">{msg.from}</div>
+                                        <div className="chat-bubble">{msg.message}</div>
+                                    </div>
+                                ) : (
+                                    <div key={index} className="chat chat-start">
+                                        <div className="chat-image avatar"></div>
+                                        <div className="chat-header">{msg.from}</div>
+                                        <div className="chat-bubble">{msg.message}</div>
+                                    </div>
+                                )
+                            ))}
+                        </div>
+                    </div>
+                    <div className='bg-orange-100 h-auto w-full space-x-3 rounded-xl px-4 py-4 flex items-center justify-center'>
+                        <input
+                            onChange={(e) => setMessage(e.target.value)}
+                            value={message}
+                            type="text"
+                            className='input w-full'
+                        />
+                        <span
+                            onClick={() => {
+                                if (message.trim() !== '') {
+                                    socket.emit('send-message', { message, room: roomId, from: name });
+                                    setMessage('');
+                                }
+                            }}
+                            className='bg-orange-200 p-3 rounded-full flex items-center justify-center'
+                        >
+                            <BsSend />
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
 
+        </div>
     );
 };
 
