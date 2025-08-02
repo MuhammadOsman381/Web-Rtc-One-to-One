@@ -27,7 +27,7 @@ const Home = () => {
         <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
 
             {!isJoining ? (
-                <div className='flex flex-col shadow bg-orange-100 space-y-3 items-center justify-center rounded-xl  p-5' >
+                <div className='flex flex-col shadow bg-zinc-800 space-y-3 items-center justify-center rounded-xl  p-5' >
                     <h1 className="text-xl font-bold">Welcome to the Meeting App</h1>
                     <input
                         className="input"
@@ -38,17 +38,17 @@ const Home = () => {
                     <div className='w-full flex space-x-2  ' >
                         <button
                             onClick={handleCreateRoom}
-                            className="btn btn-sm btn-accent">Create Room
+                            className="btn btn-sm btn-primary btn-soft">Create Room
                         </button>
 
                         <button
                             onClick={() => setIsJoining(true)}
-                            className="btn btn-sm btn-active">Join Room
+                            className="btn btn-sm  btn-soft btn-accent">Join Room
                         </button>
                     </div>
                 </div>
             ) : (
-                <div className='flex flex-col shadow bg-orange-100 space-y-3 items-center justify-center rounded-xl  p-5' >
+                <div className='flex flex-col shadow bg-zinc-800 space-y-3 items-center   justify-center rounded-xl  p-5' >
                     <h1 className="text-xl font-bold">Join meeting</h1>
                     <input
                         className="input"
@@ -65,13 +65,13 @@ const Home = () => {
                     <div className='flex space-x-2 w-full' >
                         <button
                             onClick={handleJoinRoom}
-                            className="btn btn-sm btn-accent"
+                            className="btn btn-sm btn-primary btn-soft"
                         >
                             Join
                         </button>
                         <button
                             onClick={() => setIsJoining(false)}
-                            className="btn btn-error btn-sm"
+                            className="btn btn-error btn-soft btn-sm"
                         >
                             Back
                         </button>

@@ -6,7 +6,7 @@ import { MdCall, MdCallEnd } from 'react-icons/md';
 import { BsSend } from "react-icons/bs";
 import { FaVideo, FaVideoSlash } from 'react-icons/fa';
 import { HiMiniSpeakerWave, HiMiniSpeakerXMark } from 'react-icons/hi2';
-const socket = io('https://192.168.18.12:5000');
+const socket = io('https://localhost:5000');
 
 const Room2: React.FC = () => {
     const { roomId, name } = useParams<{ roomId: string; name: string }>();
@@ -18,12 +18,13 @@ const Room2: React.FC = () => {
     const [fromOffer, setFromOffer] = useState('');
     const [isInitiator, setIsInitiator] = useState(false);
     const [isVideoOn, setIsVideoOn] = useState(true);
-    const [isAudioOn, setIsAudioOn] = useState(false);
-    // const [isScreenShared, setIsScreenShared] = useState(false);
+    const [isAudioOn, setIsAudioOn] = useState(true);
+    const [isScreenShared, setIsScreenShared] = useState(false);
     const [message, setMessage] = useState('');
     const [showLocalScreenShare, setShowLocalScreenShare] = useState(false);
     const [showRemoteScreenShare, setShowRemoteScreenShare] = useState(false);
     const [messages, setMessages] = useState<{ from: string; message: string }[]>([]);
+    const [isRemoteVideoEnlarged, setIsRemoteVideoEnlarged] = useState(false);
 
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
     const localScreenShareRef = useRef<HTMLVideoElement | null>(null);
@@ -289,70 +290,102 @@ const Room2: React.FC = () => {
 
     return (
         <div className=' w-full flex items-center justify-center' >
-            <div className='flex lg:w-[60vw]  flex-wrap   justify-center h-auto '>
-                <div className='w-full lg:w-full flex flex-col  p-5 justify-center items-center h-full gap-5'>
-                    <div className='w-full flex flex-col md:flex-row justify-center gap-5'>
+            <div className='flex flex-col lg:flex-row w-full lg:w-[83vw]   h-auto'>
+
+                <div className='w-full  lg:w-full  flex flex-col   p-5 justify-center items-center h-full gap-3'>
+                    <div className='w-full   '>
                         {localStream && (
-                            <div className="card rounded-xl bg-orange-100">
-                                <figure className="px-0 pt-0">
-                                    <video
-                                        ref={localVideoRef}
-                                        autoPlay
-                                        playsInline
-                                        className="rounded-t-xl w-full max-w-full"
-                                    />
-                                </figure>
-                                <div className="p-3 items-center text-center w-full">
-                                    <h2 className="font-bold text-xl w-full text-center">{name}</h2>
-                                </div>
+                            <div className="relative w-[60vw]  rounded-xl overflow-hidden bg-zinc-700">
+                                {isRemoteVideoEnlarged ? (
+                                    <>
+                                        <video
+                                            ref={remoteVideoRef}
+                                            autoPlay
+                                            playsInline
+                                            onClick={() => setIsRemoteVideoEnlarged(!isRemoteVideoEnlarged)}
+                                            className="w-full h-full object-cover rounded-xl cursor-pointer"
+                                        />
+                                        <div className="absolute px-3 py-1 bg-zinc-800 bottom-2 left-2 rounded-md">
+                                            <h2 className="font-bold text-md text-center">{remoteUserName}</h2>
+                                        </div>
+
+                                        <div className="absolute bottom-3 right-3 w-[220px] h-[150px] rounded-lg overflow-hidden ">
+                                            <video
+                                                ref={localVideoRef}
+                                                autoPlay
+                                                playsInline
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute px-2 py-1 bg-zinc-800 bottom-1 left-1 rounded-md text-xs">
+                                                <h2 className="font-semibold text-center">{name}</h2>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <video
+                                            ref={localVideoRef}
+                                            autoPlay
+                                            playsInline
+                                            className="w-full h-full object-cover rounded-xl"
+                                        />
+                                        <div className="absolute px-3 py-1 bg-zinc-800 bottom-2 left-2 rounded-md">
+                                            <h2 className="font-bold text-md text-center">{name}</h2>
+                                        </div>
+
+                                        {showRemoteStream && (
+                                            <div
+                                                className="absolute bottom-3 right-3 w-[220px] h-[150px] rounded-lg overflow-hidden shadow-lg  cursor-pointer"
+                                                onClick={() => setIsRemoteVideoEnlarged(true)}
+                                            >
+                                                <video
+                                                    ref={remoteVideoRef}
+                                                    autoPlay
+                                                    playsInline
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute px-2 py-1 bg-zinc-800 bottom-1 left-1 rounded-md text-xs">
+                                                    <h2 className="font-semibold text-center">{remoteUserName}</h2>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
-                        {showRemoteStream && (
-                            <div className="card rounded-xl bg-orange-100">
-                                <figure className="px-0 pt-0">
-                                    <video
-                                        ref={remoteVideoRef}
-                                        autoPlay
-                                        playsInline
-                                        className="rounded-t-xl w-full max-w-full"
-                                    />
-                                </figure>
-                                <div className="p-3 items-center text-center w-full">
-                                    <h2 className="font-bold text-xl w-full text-center">{remoteUserName}</h2>
-                                </div>
-                            </div>
-                        )}
+
+
                     </div>
 
-                    <div className='flex items-center  justify-center bg-orange-200 px-3 py-2 rounded-full h-auto gap-3 flex-wrap'>
+                    <div className='flex items-center  justify-center bg-zinc-800 px-3 py-2 rounded-full h-auto gap-3 flex-wrap'>
                         {!showRemoteStream ? (
                             <>
                                 {isInitiator && !remoteOffer && (
-                                    <span onClick={sendOffer} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    <span onClick={sendOffer} className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                         <MdCall size='25' />
                                     </span>
                                 )}
                                 {!isInitiator && remoteOffer && (
-                                    <span onClick={answerCaller} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                    <span onClick={answerCaller} className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                         <MdCallEnd size='25' />
                                     </span>
                                 )}
-                                <span onClick={turnOnAndOffVideo} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                <span onClick={turnOnAndOffVideo} className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                     {isVideoOn ? <FaVideoSlash size='25' /> : <FaVideo size='25' />}
                                 </span>
-                                <span onClick={turnOnAndOffAudio} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                <span onClick={turnOnAndOffAudio} className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                     {isAudioOn ? <HiMiniSpeakerXMark size='25' /> : <HiMiniSpeakerWave size='25' />}
                                 </span>
                             </>
                         ) : (
                             <div className='flex items-center justify-center rounded-full h-auto gap-3 flex-wrap'>
-                                <span className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                <span className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                     <MdCallEnd onClick={endCall} size='25' />
                                 </span>
-                                <span onClick={turnOnAndOffVideo} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                <span onClick={turnOnAndOffVideo} className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                     {isVideoOn ? <FaVideoSlash size='25' /> : <FaVideo size='25' />}
                                 </span>
-                                <span onClick={turnOnAndOffAudio} className='bg-orange-100 text-orange-900 rounded-full p-2'>
+                                <span onClick={turnOnAndOffAudio} className='bg-zinc-700 text-zinc-400 rounded-full p-2'>
                                     {isAudioOn ? <HiMiniSpeakerXMark size='25' /> : <HiMiniSpeakerWave size='25' />}
                                 </span>
                             </div>
@@ -360,12 +393,16 @@ const Room2: React.FC = () => {
                     </div>
                 </div>
 
-                <div className='w-full lg:w-full p-5  space-y-3'>
-                    <div className='bg-orange-100 w-full rounded-xl h-[54vh] overflow-auto'>
+                <div className='  lg:w-full  w-2xl p-5    space-y-2'>
+                    <div className='bg-zinc-800   rounded-xl h-[79vh] overflow-auto'>
                         <div className="p-4">
 
                             {
-                                messages.length == 0 && <div className='text-center w-full'>Chatting is not started yet</div>
+                                messages.length == 0 && <div className='text-center w-full flex items-center justify-center  h-[70vh] '>
+                                    <span>
+                                        Chatting is not started yet
+                                    </span>
+                                </div>
                             }
 
                             {messages.map((msg, index) => (
@@ -384,12 +421,12 @@ const Room2: React.FC = () => {
                             ))}
                         </div>
                     </div>
-                    <div className='bg-orange-100 h-auto w-full space-x-3 rounded-xl px-4 py-4 flex items-center justify-center'>
+                    <div className='bg-zinc-800 h-auto w-full space-x-2 rounded-xl p-3 flex items-center justify-center'>
                         <input
                             onChange={(e) => setMessage(e.target.value)}
                             value={message}
                             type="text"
-                            className='input w-full'
+                            className='input input-sm w-full outline-none focus-none'
                         />
                         <span
                             onClick={() => {
@@ -398,7 +435,7 @@ const Room2: React.FC = () => {
                                     setMessage('');
                                 }
                             }}
-                            className='bg-orange-200 p-3 rounded-full flex items-center justify-center'
+                            className='bg-zinc-700 p-2.5 rounded-full flex items-center justify-center'
                         >
                             <BsSend />
                         </span>
