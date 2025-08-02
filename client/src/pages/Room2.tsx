@@ -290,12 +290,12 @@ const Room2: React.FC = () => {
 
     return (
         <div className=' w-full flex items-center justify-center' >
-            <div className='flex flex-col lg:flex-row w-full lg:w-[83vw]   h-auto'>
+            <div className='flex flex-col w-full  lg:flex-row  lg:w-[83vw]   h-auto'>
 
                 <div className='w-full  lg:w-full  flex flex-col   p-5 justify-center items-center h-full gap-3'>
                     <div className='w-full   '>
                         {localStream && (
-                            <div className="relative w-[60vw]  rounded-xl overflow-hidden bg-zinc-700">
+                            <div className="relative lg:w-[60vw] w-full  rounded-xl overflow-hidden bg-zinc-700">
                                 {isRemoteVideoEnlarged ? (
                                     <>
                                         <video
@@ -393,7 +393,7 @@ const Room2: React.FC = () => {
                     </div>
                 </div>
 
-                <div className='  lg:w-full  w-2xl p-5    space-y-2'>
+                <div className='  lg:w-full   w-full p-5    space-y-2'>
                     <div className='bg-zinc-800   rounded-xl h-[79vh] overflow-auto'>
                         <div className="p-4">
 
