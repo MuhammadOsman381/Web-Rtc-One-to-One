@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import img from '../assets/chat-hero.jpg';
 import GridBackground from '../components/GridBackground';
 import ThemeToggle from '../components/ThemeToggle';
+import LoadingScreen from '../components/LoadingScreen';
 import { ArrowRight, Zap, Shield, Users } from 'lucide-react';
 
 const features = [
@@ -12,6 +14,23 @@ const features = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const wakeServer = async () => {
+      try {
+        await fetch('https://webrtc-backend-qckx.onrender.com/');
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Server wake error:', error);
+        // Still show page after a timeout or on error to not block forever
+        setIsLoading(false);
+      }
+    };
+    wakeServer();
+  }, []);
+
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div
@@ -158,3 +177,7 @@ export default function LandingPage() {
     </div>
   );
 }
+
+
+
+
